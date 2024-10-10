@@ -1,8 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 def extract_pitching_stats(url):
     # Fetch the HTML content from the URL
@@ -95,27 +93,13 @@ def extract_batting_stats(url):
     
     return stats
 
-def save_to_google_sheet(data, sheet_name):
-    # Set up Google Sheets API
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name('credentials.json', scope)
-    client = gspread.authorize(creds)
+def save_to_excel(data, filename):
+    # Create a DataFrame from the collected data
+    columns = ['URL', 'W', 'L', 'Win Percentage', 'Loss Percentage', 'SO', 'ERA', 'FIP', 'R', 'H', 'HR', 'BA', 'OBP', 'SLG']
+    df = pd.DataFrame(data, columns=columns)
 
-    # Create or open a Google Sheet
-    try:
-        sheet = client.open(sheet_name).sheet1
-    except gspread.SpreadsheetNotFound:
-        sheet = client.create(sheet_name).sheet1
-
-    # Clear existing data
-    sheet.clear()
-
-    # Prepare data for Google Sheets
-    headers = ['URL', 'W', 'L', 'Win Percentage', 'Loss Percentage', 'SO', 'ERA', 'FIP', 'R', 'H', 'HR', 'BA', 'OBP', 'SLG']
-    sheet.append_row(headers)
-
-    for row in data:
-        sheet.append_row(row)
+    # Save the DataFrame to an Excel file
+    df.to_excel(filename, index=False)
 
 def main():
     # Read URLs from urls.csv
@@ -134,8 +118,8 @@ def main():
                              [batting_stats.get(stat, '') for stat in ['R', 'H', 'HR', 'BA', 'OBP', 'SLG']]
             all_stats.append(combined_stats)
 
-    # Save the collected stats to Google Sheets
-    save_to_google_sheet(all_stats, "Baseball Stats 2024")
+    # Save the collected stats to an Excel file
+    save_to_excel(all_stats, "Baseball_Stats_2024.xlsx")
 
 if __name__ == "__main__":
     main()
