@@ -20,16 +20,17 @@ def extract_pitching_stats(url):
                     data_stat = td.get("data-stat")
                     value = td.text.strip()
                     
-                    if data_stat == 'W':
-                        stats['W'] = value
-                    elif data_stat == 'L':
-                        stats['L'] = value
-                    elif data_stat == 'SO':
+                    # Extract relevant pitching statistics
+                    if data_stat == 'SO':
                         stats['SO'] = value
                     elif data_stat == 'earned_run_avg':
                         stats['ERA'] = value
                     elif data_stat == 'fip':
                         stats['FIP'] = value
+                    elif data_stat == 'W':
+                        stats['W'] = value
+                    elif data_stat == 'L':
+                        stats['L'] = value
 
                 # Calculate percentages
                 wins = int(stats.get('W', 0))
@@ -72,12 +73,15 @@ def extract_batting_stats(url):
                     data_stat = td.get("data-stat")
                     value = td.text.strip()
                     
+                    # Extract relevant batting statistics
                     if data_stat == 'R':
                         stats['R'] = value
                     elif data_stat == 'H':
                         stats['H'] = value
                     elif data_stat == 'HR':
                         stats['HR'] = value
+                    elif data_stat == 'SB':
+                        stats['SB'] = value
                     elif data_stat == 'batting_avg':
                         stats['BA'] = value
                     elif data_stat == 'onbase_perc':
@@ -95,7 +99,7 @@ def extract_batting_stats(url):
 
 def save_to_excel(data, filename):
     # Create a DataFrame from the collected data
-    columns = ['URL', 'W', 'L', 'Win Percentage', 'Loss Percentage', 'SO', 'ERA', 'FIP', 'R', 'H', 'HR', 'BA', 'OBP', 'SLG']
+    columns = ['URL', 'W', 'L', 'Win Percentage', 'Loss Percentage', 'SO', 'ERA', 'FIP', 'R', 'H', 'HR', 'SB', 'BA', 'OBP', 'SLG']
     df = pd.DataFrame(data, columns=columns)
 
     # Save the DataFrame to an Excel file
@@ -106,19 +110,27 @@ def main():
     urls_df = pd.read_csv('urls.csv')
     urls = urls_df['URL'].tolist()
 
-    all_stats = []
+    all_stats = []  # This will hold stats for each URL
 
+    # Loop through each URL
     for url in urls:
+        # Extract both pitching and batting stats from the current URL
         pitching_stats = extract_pitching_stats(url)
         batting_stats = extract_batting_stats(url)
         
+        # Only combine stats if both pitching and batting stats were successfully extracted
         if pitching_stats and batting_stats:
-            # Combine stats with the URL
-            combined_stats = [url] + [pitching_stats.get(stat, '') for stat in ['W', 'L', 'Win Percentage', 'Loss Percentage', 'SO', 'ERA', 'FIP']] + \
-                             [batting_stats.get(stat, '') for stat in ['R', 'H', 'HR', 'BA', 'OBP', 'SLG']]
+            # Combine stats for this URL, including the URL as the first item
+            combined_stats = [url] + [
+                pitching_stats.get(stat, '') for stat in ['W', 'L', 'Win Percentage', 'Loss Percentage', 'SO', 'ERA', 'FIP']
+            ] + [
+                batting_stats.get(stat, '') for stat in ['R', 'H', 'HR', 'SB', 'BA', 'OBP', 'SLG']
+            ]
+            
+            # Append the combined stats to the list for all URLs
             all_stats.append(combined_stats)
 
-    # Save the collected stats to an Excel file
+    # Save all stats to an Excel file
     save_to_excel(all_stats, "Baseball_Stats_2024.xlsx")
 
 if __name__ == "__main__":
